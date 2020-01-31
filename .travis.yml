@@ -28,7 +28,7 @@ script:
 deploy:
   provider: script
   script: 
-	docker buildx build
+    docker buildx build
     --platform $PLATFORMS
     --build-arg "VERSION=$TRAVIS_BRANCH"
     --file "$VARIANT/Dockerfile"
