@@ -1,6 +1,8 @@
 before_install:
   - curl -sf https://test.docker.com | sh
   - docker --version
+  # login to docker registries (dockerhub)
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 dist: bionic
 
@@ -9,10 +11,9 @@ language: bash
 env:
   global:
     - DOCKER_CLI_EXPERIMENTAL=enabled
-    - PLATFORMS=linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+    - PLATFORMS=linux/amd64,linux/arm/v7,linux/arm64
   matrix:
     - VARIANT=alpine
-    - VARIANT=debian
 
 stages:
   - name: test
@@ -21,16 +22,22 @@ stages:
     if: tag IS present OR branch = master
 
 script:
-  - echo "$DOCKER_PASSWORD" | docker login -u nunofgs --password-stdin
   - docker run --privileged linuxkit/binfmt:v0.7
   - docker buildx create --use
-  - docker buildx build
+
+deploy:
+  provider: script
+  script: 
+	docker buildx build
     --platform $PLATFORMS
     --build-arg "VERSION=$TRAVIS_BRANCH"
     --file "$VARIANT/Dockerfile"
-    --tag nunofgs/octoprint:$TRAVIS_BRANCH-$VARIANT
-    `if [ -n "$TRAVIS_TAG" ]; then echo "--tag nunofgs/octoprint:$VARIANT"; fi`
-    `if [ -n "$TRAVIS_TAG" ] && [ "$VARIANT" = "debian" ]; then echo "--tag nunofgs/octoprint:latest"; fi`
-    `if [ "$VARIANT" = "debian" ]; then echo "--tag nunofgs/octoprint:$TRAVIS_BRANCH"; fi`
+    --tag "$DOCKER_USERNAME"/octoprint:$TRAVIS_BRANCH-$VARIANT
+    `if [ -n "$TRAVIS_TAG" ]; then echo "--tag "$DOCKER_USERNAME"/octoprint:$VARIANT"; fi`
+    `if [ -n "$TRAVIS_TAG" ] && [ "$VARIANT" = "debian" ]; then echo "--tag "$DOCKER_USERNAME"/octoprint:latest"; fi`
+    `if [ "$VARIANT" = "debian" ]; then echo "--tag "$DOCKER_USERNAME"/octoprint:$TRAVIS_BRANCH"; fi`
     --push
     .
+  on:
+    branch: master
+
