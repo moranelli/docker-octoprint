@@ -36,6 +36,10 @@ COPY --from=build /OctoPrint-* /opt/octoprint
 RUN apk --no-cache add build-base ffmpeg haproxy libjpeg openssh-client supervisor v4l-utils
 RUN ln -s ~/.octoprint /data
 
+#Habilito PL011 UART port
+RUN echo -e "\ndtoverlay=pi3-miniuart-bt" >> /boot/config.txt
+RUN sed -i 's/console=serial0,115200 //g' /boot/cmdline.txt
+
 VOLUME /data
 WORKDIR /data
 
